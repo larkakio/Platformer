@@ -19,21 +19,16 @@ export function WalletBar() {
   const { switchChainAsync, isPending: switching } = useSwitchChain();
   const { connectAsync } = useConnect();
 
-  const [mounted, setMounted] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted || !sheetOpen) return;
+    if (!sheetOpen || typeof document === "undefined") return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
-  }, [mounted, sheetOpen]);
+  }, [sheetOpen]);
 
   const wrongNetwork =
     typeof chainId === "number" &&
@@ -51,15 +46,14 @@ export function WalletBar() {
   async function handleConnectorPick(connectorId: string): Promise<void> {
     const connectorInst = config.connectors.find((c) => c.id === connectorId);
     if (!connectorInst) return;
-    await connectAsync({
-      connector: connectorInst,
-      chainId: base.id,
-    });
+    // Do not pass chainId here: forcing an immediate network switch often fails on
+    // mobile / Coinbase Wallet before the session exists. Use the banner + "Switch to Base" instead.
+    await connectAsync({ connector: connectorInst });
     setSheetOpen(false);
   }
 
   return (
-    <header className="border-b border-cyan-500/30 bg-[#050614]/95 px-4 py-3 backdrop-blur-md">
+    <header className="sticky top-0 z-[200] border-b border-cyan-500/30 bg-[#050614]/95 px-4 py-3 backdrop-blur-md">
       {wrongNetwork && (
         <div
           aria-live="polite"
@@ -68,7 +62,7 @@ export function WalletBar() {
         >
           <span>Wrong network. Switch to Base to check in.</span>
           <button
-            disabled={switching || !mounted}
+            disabled={switching}
             onClick={() => void handleSwitch()}
             type="button"
             className="rounded-md border border-amber-300/70 bg-black/60 px-3 py-1 text-xs uppercase tracking-wide text-amber-200 hover:bg-black/90 disabled:opacity-50"
@@ -106,10 +100,9 @@ export function WalletBar() {
         <div className="flex shrink-0 items-center gap-2">
           {!isConnected ? (
             <button
-              disabled={!mounted}
               type="button"
               onClick={() => setSheetOpen(true)}
-              className="rounded-lg border border-cyan-400/80 bg-black/55 px-3 py-2 text-xs uppercase tracking-[0.16em] text-cyan-200 shadow-[0_0_18px_-3px_rgba(56,239,239,0.55)] hover:border-cyan-300 hover:text-white disabled:opacity-50"
+              className="rounded-lg border border-cyan-400/80 bg-black/55 px-3 py-2 text-xs uppercase tracking-[0.16em] text-cyan-200 shadow-[0_0_18px_-3px_rgba(56,239,239,0.55)] hover:border-cyan-300 hover:text-white"
             >
               Connect
             </button>
@@ -137,13 +130,11 @@ export function WalletBar() {
         </div>
       </div>
 
-      {mounted ? (
-        <ConnectWalletSheetPortal
-          onPickConnector={handleConnectorPick}
-          onClose={() => setSheetOpen(false)}
-          open={sheetOpen}
-        />
-      ) : null}
+      <ConnectWalletSheetPortal
+        onPickConnector={handleConnectorPick}
+        onClose={() => setSheetOpen(false)}
+        open={sheetOpen}
+      />
     </header>
   );
 }
@@ -157,7 +148,10 @@ function ConnectWalletSheetPortal({
   onClose: () => void;
   onPickConnector: (connectorId: string) => Promise<void>;
 }) {
-  if (!open || typeof document === "undefined") {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  if (!open) {
     return null;
   }
 
@@ -176,6 +170,7 @@ function ConnectSheet({
 }) {
   const connectors = config.connectors;
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [pickError, setPickError] = useState<string | null>(null);
 
   const handlePick = async (connectorId: string) => {
     const connectorPick = connectors.find((c) => c.id === connectorId);
@@ -211,6 +206,14 @@ function ConnectSheet({
         </div>
 
         <div className="mb-[env(safe-area-inset-bottom)] max-h-[50vh] space-y-2 overflow-y-auto pr-1">
+          {pickError ? (
+            <p
+              className="mb-2 rounded-lg border border-red-500/55 bg-red-950/65 px-3 py-2 text-sm text-red-100"
+              role="alert"
+            >
+              {pickError}
+            </p>
+          ) : null}
           {connectors.length === 0 ? (
             <p className="text-sm leading-relaxed text-gray-400">
               No injected wallet connector is available here. Open inside the
@@ -225,9 +228,16 @@ function ConnectSheet({
                 type="button"
                 onClick={() =>
                   void (async () => {
+                    setPickError(null);
                     try {
                       setBusyId(connector.id);
                       await handlePick(connector.id);
+                    } catch (e: unknown) {
+                      const msg =
+                        e instanceof Error
+                          ? e.message
+                          : "Could not connect. Try again or pick another wallet.";
+                      setPickError(msg);
                     } finally {
                       setBusyId(null);
                     }
