@@ -53,14 +53,21 @@ export function WalletBar() {
     setBusyId(null);
   }, []);
 
-  /** WalletConnect / some connectors update account after connectAsync settles; always tear down picker when wired. */
+  /** Close when wagmi reports a live account (WalletConnect can lag behind connectAsync). */
   useEffect(() => {
     if (!isConnected || !address) return;
-    const dlg = pickerRef.current;
-    if (!dlg?.open) return;
-    dlg.close();
-    setPickError(null);
-    setBusyId(null);
+    const run = (): void => {
+      pickerRef.current?.close();
+      setPickError(null);
+      setBusyId(null);
+    };
+    run();
+    const t = window.setTimeout(run, 50);
+    const t2 = window.setTimeout(run, 300);
+    return () => {
+      window.clearTimeout(t);
+      window.clearTimeout(t2);
+    };
   }, [isConnected, address]);
 
   useEffect(() => {
@@ -183,29 +190,38 @@ export function WalletBar() {
 
       <dialog
         ref={pickerRef}
-        className="pointer-events-auto fixed inset-0 z-[2147483647] m-0 flex h-auto max-h-none w-auto max-w-none cursor-default flex-col border-0 bg-black/72 p-0 text-[inherit] shadow-none outline-none [&::backdrop]:bg-black/50"
-        onPointerDown={(event) => {
-          if (event.target === event.currentTarget) closePicker();
-        }}
+        aria-labelledby="wallet-picker-title"
+        aria-modal="true"
+        className="pointer-events-auto fixed inset-0 z-[2147483647] m-0 max-h-none max-w-none border-0 bg-transparent p-0 text-[inherit] shadow-none outline-none [&::backdrop]:bg-black/55"
       >
-        {/* pointer-events-none so taps pass through to <dialog>; only the sheet captures events */}
-        <div className="pointer-events-none flex min-h-[100dvh] w-full flex-1 flex-col justify-end pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:justify-center">
+        <div
+          className="flex min-h-[100dvh] w-full flex-col justify-end bg-black/72 p-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] sm:justify-center sm:pb-16"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closePicker();
+          }}
+          role="presentation"
+        >
           <div
-            className="pointer-events-auto mx-auto mb-4 w-full max-w-md rounded-2xl border border-cyan-500/55 bg-[#061021] p-4 shadow-[0_0_60px_-10px_rgba(34,246,229,0.45)] sm:mb-0"
-            onPointerDown={(e) => e.stopPropagation()}
+            className="mx-auto w-full max-w-md rounded-2xl border border-cyan-500/55 bg-[#061021] p-4 shadow-[0_0_60px_-10px_rgba(34,246,229,0.45)]"
+            onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h2 className="font-mono text-sm uppercase tracking-[0.24em] text-cyan-200">
+            <div className="relative z-[1] mb-4 flex items-center justify-between gap-3">
+              <h2
+                className="font-mono text-sm uppercase tracking-[0.24em] text-cyan-200"
+                id="wallet-picker-title"
+              >
                 Choose wallet
               </h2>
-              <button
-                aria-label="Close"
-                type="button"
-                onClick={() => closePicker()}
-                className="rounded-md border border-white/25 px-2 py-1 text-xs uppercase tracking-[0.2em] text-gray-300 hover:bg-white/10"
-              >
-                Close
-              </button>
+              <form className="contents" method="dialog">
+                <button
+                  aria-label="Close wallet list"
+                  className="rounded-md border border-white/25 px-2 py-1 text-xs uppercase tracking-[0.2em] text-gray-300 hover:bg-white/10"
+                  style={{ touchAction: "manipulation" }}
+                  type="submit"
+                >
+                  Close
+                </button>
+              </form>
             </div>
 
             {pickError ?
