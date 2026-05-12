@@ -18,7 +18,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://platformer-inky.vercel.app";
+
+/** Matches Base dashboard domain verification (`meta name="base:app_id"`). */
+const DEFAULT_BASE_APP_ID = "6a02cecaf8601f8d21fe6b38";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Neon Flux Relay — Base Cyber-Platformer",
   description:
     "Swipe neon cyber-platforming on Base. Daily check-in with Builder Codes attribution.",
@@ -40,7 +47,7 @@ export default async function RootLayout({
   const hdr = await headers();
   const cookieHeader = hdr.get("cookie") ?? "";
   const initialState = cookieToInitialState(wagmiConfig, cookieHeader);
-  const baseAppId = getPublicBaseAppId() ?? "configure-on-base-dot-dev";
+  const baseAppId = getPublicBaseAppId() ?? DEFAULT_BASE_APP_ID;
 
   return (
     <html lang="en">
