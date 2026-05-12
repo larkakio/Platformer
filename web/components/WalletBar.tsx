@@ -53,6 +53,16 @@ export function WalletBar() {
     setBusyId(null);
   }, []);
 
+  /** WalletConnect / some connectors update account after connectAsync settles; always tear down picker when wired. */
+  useEffect(() => {
+    if (!isConnected || !address) return;
+    const dlg = pickerRef.current;
+    if (!dlg?.open) return;
+    dlg.close();
+    setPickError(null);
+    setBusyId(null);
+  }, [isConnected, address]);
+
   useEffect(() => {
     const d = pickerRef.current;
     if (!d) return undefined;
