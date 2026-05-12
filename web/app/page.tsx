@@ -4,10 +4,10 @@ import { WalletBar } from "@/components/WalletBar";
 
 export default function Page() {
   return (
-    <div className="flex min-h-dvh flex-col">
+    <>
       <WalletBar />
 
-      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-[calc(var(--app-header-h,5.25rem)+1rem)] md:overflow-y-auto md:overscroll-y-none">
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 pb-[max(env(safe-area-inset-bottom),1.25rem)] pt-4 md:overflow-y-auto md:overscroll-y-none">
         <header className="mb-6 text-center md:text-left">
           <h1
             aria-label="Neon Flux Relay"
@@ -36,6 +36,6 @@ export default function Page() {
           </footer>
         </div>
       </main>
-    </div>
+    </>
   );
 }

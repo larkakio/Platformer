@@ -25,7 +25,9 @@ export default function Providers({
 
   return (
     <WagmiProvider config={config} initialState={initialState}>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <div className="relative z-10 flex min-h-dvh flex-col">{children}</div>
+      </QueryClientProvider>
     </WagmiProvider>
   );
 }
