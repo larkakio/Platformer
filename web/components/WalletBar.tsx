@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { base } from "wagmi/chains";
 import {
@@ -20,6 +20,29 @@ export function WalletBar() {
   const { connectAsync } = useConnect();
 
   const [sheetOpen, setSheetOpen] = useState(false);
+  const headerRef = useRef<HTMLElement | null>(null);
+
+  const wrongNetwork =
+    typeof chainId === "number" &&
+    typeof base.id === "number" &&
+    chainId !== base.id;
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const el = headerRef.current;
+    if (!el) return undefined;
+
+    const publish = (): void => {
+      root.style.setProperty("--app-header-h", `${el.offsetHeight}px`);
+    };
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return (): void => {
+      ro.disconnect();
+      root.style.removeProperty("--app-header-h");
+    };
+  }, []);
 
   useEffect(() => {
     if (!sheetOpen || typeof document === "undefined") return;
@@ -29,11 +52,6 @@ export function WalletBar() {
       document.body.style.overflow = prev;
     };
   }, [sheetOpen]);
-
-  const wrongNetwork =
-    typeof chainId === "number" &&
-    typeof base.id === "number" &&
-    chainId !== base.id;
 
   const handleSwitch = async () => {
     await switchChainAsync({ chainId: base.id });
@@ -53,11 +71,15 @@ export function WalletBar() {
   }
 
   return (
-    <header className="sticky top-0 z-[200] border-b border-cyan-500/30 bg-[#050614]/95 px-4 py-3 backdrop-blur-md">
+    <header
+      ref={headerRef}
+      className="pointer-events-auto fixed inset-x-0 top-0 z-[100000] isolate border-b border-cyan-500/30 bg-[#050614]/95 pt-[env(safe-area-inset-top,0px)] backdrop-blur-md"
+    >
+      <div className="space-y-2 px-4 pb-3 pt-3">
       {wrongNetwork && (
         <div
           aria-live="polite"
-          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/70 bg-amber-500/10 px-3 py-2 text-sm text-amber-100"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/70 bg-amber-500/10 px-3 py-2 text-sm text-amber-100"
           role="status"
         >
           <span>Wrong network. Switch to Base to check in.</span>
@@ -80,7 +102,7 @@ export function WalletBar() {
             height={44}
             alt=""
             priority
-            className="h-10 w-10 shrink-0 rounded-lg border border-cyan-400/40 object-cover"
+            className="pointer-events-none h-10 w-10 shrink-0 rounded-lg border border-cyan-400/40 object-cover"
           />
           <div className="min-w-0">
             <p className="truncate text-[0.68rem] font-medium uppercase tracking-[0.38em] text-cyan-200/85">
@@ -102,7 +124,7 @@ export function WalletBar() {
             <button
               type="button"
               onClick={() => setSheetOpen(true)}
-              className="rounded-lg border border-cyan-400/80 bg-black/55 px-3 py-2 text-xs uppercase tracking-[0.16em] text-cyan-200 shadow-[0_0_18px_-3px_rgba(56,239,239,0.55)] hover:border-cyan-300 hover:text-white"
+              className="relative z-10 cursor-pointer touch-manipulation rounded-lg border border-cyan-400/80 bg-black/55 px-3 py-2 text-xs uppercase tracking-[0.16em] text-cyan-200 shadow-[0_0_18px_-3px_rgba(56,239,239,0.55)] hover:border-cyan-300 hover:text-white"
             >
               Connect
             </button>
@@ -128,6 +150,7 @@ export function WalletBar() {
             </>
           )}
         </div>
+      </div>
       </div>
 
       <ConnectWalletSheetPortal
@@ -183,7 +206,7 @@ function ConnectSheet({
       aria-label="Choose wallet"
       aria-modal="true"
       role="dialog"
-      className="fixed inset-0 z-[99999] flex items-end justify-center bg-black/70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[min(48vh,8rem)] sm:items-center sm:pb-16"
+      className="fixed inset-0 z-[200000] flex items-end justify-center bg-black/70 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[min(48vh,8rem)] sm:items-center sm:pb-16"
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();

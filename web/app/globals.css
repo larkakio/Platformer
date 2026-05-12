@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+  /* Until WalletBar ResizeObserver runs, keep main content clears the fixed header */
+  --app-header-h: 5.25rem;
   --void: #040112;
   --signal: #3afcef;
   --pulse: #f472f5;
