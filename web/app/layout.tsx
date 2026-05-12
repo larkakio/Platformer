@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "Neon Flux Relay — Base Cyber-Platformer",
   description:
-    "Swipe neon cyber-platforming on Base. Daily check-in with Builder Codes attribution.",
+    "Dash neon shards on Base in a pocket cyber-platformer: swipe controls, wallet connect, English UI, one daily on-chain relay ping with Builder attribution—gas on Base only.",
 };
 
 export const viewport: Viewport = {
